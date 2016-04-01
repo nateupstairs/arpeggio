@@ -1,3 +1,3 @@
-# Arpegio
+# Arpeggio
 
 ## ODM for ArangoDB

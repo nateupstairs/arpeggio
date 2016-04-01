@@ -1,8 +1,8 @@
 {
-  "name": "arpegio",
+  "name": "arpeggio",
   "version": "1.0.0",
   "description": "",
-  "main": "src/arpegio.js",
+  "main": "src/arpeggio.js",
   "scripts": {
     "test": ""
   },

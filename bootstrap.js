@@ -1,3 +1,3 @@
 require('babel-register')
 require('babel-polyfill')
-var rookery = require('./src/arpegio')
+var arpeggio = require('./src/arpeggio')

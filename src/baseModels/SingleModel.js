@@ -82,7 +82,7 @@ export class SingleModel {
   }
 
   async save() {
-    let data = this.data
+    let data = this.format()
     let cursor
 
     try {
@@ -123,9 +123,13 @@ export class SingleModel {
     }
   }
 
+  format() {
+    return this.data
+  }
+
   async validate() {
     let rules = this.rules
-    let data = this.data
+    let data = this.format()
     let options = {
       abortEarly: false
     }
