@@ -2,10 +2,8 @@
  * Base Model
  */
 
-var request = require('axios')
 var Joi = require('joi')
 var Boom = require('boom')
-var url = require('url')
 var base64 = require('urlsafe-base64')
 
 import * as connection from '../connection'
@@ -19,7 +17,6 @@ export class SingleModel {
     this.prevData = {}
     this.table = table
     this.Joi = Joi
-    this.request = request
     this.connection = connection.getConnection()
   }
 
