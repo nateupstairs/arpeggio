@@ -5,6 +5,7 @@
 var Joi = require('joi')
 var Boom = require('boom')
 var base64 = require('urlsafe-base64')
+var _ = require('lodash')
 
 import * as connection from '../connection'
 
@@ -26,7 +27,7 @@ export class SingleModel {
     let params = {}
 
     if (args.length == 1) {
-      key = '_id'
+      key = '_key'
       value = args[0]
     }
     else {
@@ -47,6 +48,29 @@ export class SingleModel {
           value: value
         }
       )
+
+      if (!cursor._result.length) {
+        throw Boom.notFound()
+      }
+      result = await cursor.next()
+      this.isNew = false
+      this.prevData = result
+      Object.assign(this.data, result)
+      return this
+    }
+    catch (err) {
+      throw Boom.wrap(err)
+    }
+  }
+
+  async query(aql, params) {
+    params = Object.assign({
+      '@table': this.table
+    }, params)
+
+    try {
+      let result
+      let cursor = await this.connection.database.query(aql, params)
 
       if (!cursor._result.length) {
         throw Boom.notFound()
@@ -166,16 +190,47 @@ export class SingleModel {
   }
 
   toJSON() {
+    let currentData = Object.assign({}, this.data)
     let localData = {}
     let hidden = ['_rev', '_key']
 
-    Object.assign(localData, this.data)
+    if (currentData._key) {
+      localData._id = currentData._key
+      delete currentData._id
+    }
+    localData = Object.assign(localData, currentData)
     if (this.hidden) {
       hidden = hidden.concat(this.hidden)
     }
     hidden.forEach(h => {
       delete localData[h]
     })
+    if (this.submodels) {
+      this.submodels.forEach(s => {
+        let key = s[0]
+        let Model = s[1]
+
+        if (localData[key]) {
+          if (_.isArray(localData[key])) {
+            let arrayData = []
+
+            localData[key].forEach(d => {
+              let model = new Model()
+
+              model.ingest(d)
+              arrayData.push(model.toJSON())
+            })
+            localData[key] = arrayData
+          }
+          else {
+            let model = new Model()
+
+            model.ingest(localData[key])
+            localData[key] = model.toJSON()
+          }
+        }
+      })
+    }
     return localData
   }
 
