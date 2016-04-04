@@ -12,6 +12,7 @@ export class CollectionModel {
     this.models = []
     this.baseModel = baseModel
     this.table = new baseModel().table
+    this.rawQuery = new baseModel().rawQuery
     this.connection = connection.getConnection()
   }
 
