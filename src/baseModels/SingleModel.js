@@ -86,10 +86,6 @@ export class SingleModel {
   }
 
   async rawQuery(aql, params) {
-    params = Object.assign({
-      '@table': this.table
-    }, params)
-
     try {
       let result
       let cursor = await this.connection.database.query(aql, params)
