@@ -18,6 +18,7 @@ export class SingleModel {
     this.prevData = {}
     this.table = table
     this.children = {}
+    this.meta = {}
     this.Joi = Joi
     this.connection = connection.getConnection()
   }
@@ -263,6 +264,9 @@ export class SingleModel {
       else {
         localData[key] = modelData.toJSON()
       }
+    }
+    for (let key in this.meta) {
+      localData[key] = this.meta[key]
     }
     return localData
   }
