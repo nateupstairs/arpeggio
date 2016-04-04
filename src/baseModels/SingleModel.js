@@ -17,6 +17,7 @@ export class SingleModel {
     this.data = {}
     this.prevData = {}
     this.table = table
+    this.children = {}
     this.Joi = Joi
     this.connection = connection.getConnection()
   }
@@ -54,8 +55,7 @@ export class SingleModel {
       }
       result = await cursor.next()
       this.isNew = false
-      this.prevData = result
-      Object.assign(this.data, result)
+      this.assignData(result)
       return this
     }
     catch (err) {
@@ -77,13 +77,64 @@ export class SingleModel {
       }
       result = await cursor.next()
       this.isNew = false
-      this.prevData = result
-      Object.assign(this.data, result)
+      this.assignData(result)
       return this
     }
     catch (err) {
       throw Boom.wrap(err)
     }
+  }
+
+  async rawQuery(aql, params) {
+    params = Object.assign({
+      '@table': this.table
+    }, params)
+
+    try {
+      let result
+      let cursor = await this.connection.database.query(aql, params)
+
+      result = await cursor.all()
+      return result
+    }
+    catch (err) {
+      throw Boom.wrap(err)
+    }
+  }
+
+  assignData(inData) {
+    let data = Object.assign({}, inData)
+
+    if (this.submodels) {
+      this.submodels.forEach(s => {
+        let key = s[0]
+        let Model = s[1]
+
+        if (data[key]) {
+          let keyData = data[key]
+
+          delete data[key]
+          if (_.isArray(keyData)) {
+            this.children[key] = []
+
+            keyData.forEach(d => {
+              let model = new Model()
+
+              model.ingest(d)
+              this.children[key].push(model)
+            })
+          }
+          else {
+            let model = new Model()
+
+            model.ingest(keyData)
+            this.children[key] = model
+          }
+        }
+      })
+    }
+    this.prevData = data
+    Object.assign(this.data, data)
   }
 
   async destroy() {
@@ -177,8 +228,7 @@ export class SingleModel {
 
   ingest(d) {
     this.isNew = false
-    this.prevData = d
-    Object.assign(this.data, d)
+    this.assignData(d)
     return this
   }
 
@@ -205,31 +255,18 @@ export class SingleModel {
     hidden.forEach(h => {
       delete localData[h]
     })
-    if (this.submodels) {
-      this.submodels.forEach(s => {
-        let key = s[0]
-        let Model = s[1]
+    for (let key in this.children) {
+      let modelData = this.children[key]
 
-        if (localData[key]) {
-          if (_.isArray(localData[key])) {
-            let arrayData = []
-
-            localData[key].forEach(d => {
-              let model = new Model()
-
-              model.ingest(d)
-              arrayData.push(model.toJSON())
-            })
-            localData[key] = arrayData
-          }
-          else {
-            let model = new Model()
-
-            model.ingest(localData[key])
-            localData[key] = model.toJSON()
-          }
-        }
-      })
+      if (_.isArray(modelData)) {
+        localData[key] = []
+        modelData.forEach(m => {
+          localData[key].push(m.toJSON())
+        })
+      }
+      else {
+        localData[key] = modelData.toJSON()
+      }
     }
     return localData
   }
