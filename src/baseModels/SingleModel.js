@@ -238,6 +238,10 @@ export class SingleModel {
     }
   }
 
+  keyToId(key) {
+    return `${this.table}/key`
+  }
+
   toJSON() {
     let currentData = Object.assign({}, this.data)
     let localData = {}
