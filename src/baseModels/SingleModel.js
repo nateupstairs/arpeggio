@@ -159,7 +159,7 @@ export class SingleModel {
 
     try {
       this.updateTimestamps()
-      this.validate()
+      await this.validate()
       if (this.isNew) {
         cursor = await this.connection.database.query(
           `
