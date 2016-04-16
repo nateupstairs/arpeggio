@@ -113,12 +113,14 @@ export class SingleModel {
           delete data[key]
           if (_.isArray(keyData)) {
             this.children[key] = []
+            let collection = new Model()
 
+            this.children[key] = collection
             keyData.forEach(d => {
-              let model = new Model()
+              let model = new collection.baseModel()
 
               model.ingest(d)
-              this.children[key].push(model)
+              collection.models.push(model)
             })
           }
           else {
