@@ -2,9 +2,9 @@
   "name": "arpeggio",
   "version": "1.0.0",
   "description": "",
-  "main": "bootstrap.js",
+  "main": "lib/arpeggio.js",
   "scripts": {
-    "test": ""
+    "compile": "babel src --out-dir lib"
   },
   "engines": {
     "node": "5.0.0",
