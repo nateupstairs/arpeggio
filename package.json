@@ -2,7 +2,7 @@
   "name": "arpeggio",
   "version": "1.0.0",
   "description": "",
-  "main": "src/arpeggio.js",
+  "main": "bootstrap.js",
   "scripts": {
     "test": ""
   },
