@@ -239,7 +239,7 @@ export class SingleModel {
   }
 
   keyToId(key) {
-    return `${this.table}/key`
+    return `${this.table}/${key}`
   }
 
   toJSON() {
