@@ -15,6 +15,7 @@ export class SingleModel {
     this.isNew = true
     this.timestamps = false
     this.data = {}
+    this.events = {}
     this.prevData = {}
     this.table = table
     this.children = {}
@@ -138,6 +139,7 @@ export class SingleModel {
 
   async destroy() {
     try {
+      await this.triggerEvent('beforeDestroy')
       let cursor = await this.connection.database.query(
         `
           REMOVE @key in @@table
@@ -148,6 +150,7 @@ export class SingleModel {
         }
       )
 
+      await this.triggerEvent('afterDestroy')
       return this
     }
     catch (err) {
@@ -160,6 +163,7 @@ export class SingleModel {
     let cursor
 
     try {
+      await this.triggerEvent('beforeSave')
       this.updateTimestamps()
       await this.validate()
       if (this.isNew) {
@@ -190,6 +194,7 @@ export class SingleModel {
       }
       this.isNew = false
       this.data = cursor._result[0]
+      await this.triggerEvent('afterSave')
       return this
     }
     catch (err) {
@@ -240,6 +245,13 @@ export class SingleModel {
 
   keyToId(key) {
     return `${this.table}/${key}`
+  }
+
+  async triggerEvent(eventName) {
+    if (!this.events[eventName]) {
+      return false
+    }
+    return await this[this.events[eventName]]()
   }
 
   toJSON() {

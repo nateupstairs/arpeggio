@@ -4,7 +4,8 @@
   "description": "",
   "main": "lib/arpeggio.js",
   "scripts": {
-    "compile": "babel src --out-dir lib"
+    "build": "babel src -d lib",
+    "lint": "eslint ."
   },
   "engines": {
     "node": "5.0.0",
