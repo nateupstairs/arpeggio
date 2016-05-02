@@ -163,9 +163,12 @@ export class SingleModel {
     let cursor
 
     try {
+      let validated
+
       await this.triggerEvent('beforeSave')
       this.updateTimestamps()
-      await this.validate()
+      validated = await this.validate()
+      this.data = validated
       if (this.isNew) {
         cursor = await this.connection.database.query(
           `
@@ -217,7 +220,7 @@ export class SingleModel {
       if (!rules) {
         return resolve()
       }
-      return Joi.validate(data, rules, options, function (err, value) {
+      return Joi.validate(data, rules, options, function(err, value) {
         if (err) {
           return reject(Boom.badData(err.message, err))
         }
