@@ -65,14 +65,18 @@ export class SingleModel {
     }
   }
 
-  async query(aql, params) {
-    params = Object.assign({
-      '@table': this.table
-    }, params)
+  async query(aql, params, options = {}) {
+    let localParams = Object.assign({}, params)
+    let localOptions = Object.assign({
+      appendTableParam: true
+    }, options)
 
+    if (localOptions.appendTableParam !== false) {
+      localParams['@table'] = this.table
+    }
     try {
       let result
-      let cursor = await this.connection.database.query(aql, params)
+      let cursor = await this.connection.database.query(aql, localParams)
 
       if (!cursor._result.length) {
         throw Boom.notFound()

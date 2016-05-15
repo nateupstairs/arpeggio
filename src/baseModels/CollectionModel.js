@@ -16,14 +16,18 @@ export class CollectionModel {
     this.connection = connection.getConnection()
   }
 
-  async query(aql, params) {
+  async query(aql, params, options = {}) {
+    let localParams = Object.assign({}, params)
+    let localOptions = Object.assign({
+      appendTableParam: true
+    }, options)
     let result
     let cursor
 
-    params = Object.assign({
-      '@table': this.table
-    }, params)
-    cursor = await this.connection.database.query(aql, params)
+    if (localOptions.appendTableParam !== false) {
+      localParams['@table'] = this.table
+    }
+    cursor = await this.connection.database.query(aql, localParams)
 
     return cursor.all()
       .then(result => {
