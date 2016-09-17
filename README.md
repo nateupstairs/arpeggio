@@ -1,6 +1,6 @@
 # Arpeggio
 
-## Extremely Opionated ORM/ODM
+## Extremely Opinionated ORM/ODM
 
 > Currently not suitable for public use
 
