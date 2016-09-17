@@ -1,8 +1,12 @@
 {
   "name": "arpeggio",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "extremely opinionated ORM/ODM",
   "main": "lib/arpeggio.js",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/nateupstairs/arpeggio"
+  },
   "scripts": {
     "build": "babel src -d lib",
     "lint": "eslint ."
@@ -11,7 +15,7 @@
     "node": "5.0.0",
     "npm": "3.3.6"
   },
-  "author": "",
+  "author": "nateupstairs",
   "license": "ISC",
   "dependencies": {
     "arangojs": "^5.0.3",
