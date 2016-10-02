@@ -1,18 +1,21 @@
-import * as connection from './connection'
-import * as designer from './designer'
+import * as adapter from './adapter'
 import {SingleModel as SingleModel} from './baseModels/SingleModel'
-import {EdgeModel as EdgeModel} from './baseModels/EdgeModel'
 import {CollectionModel as CollectionModel} from './baseModels/CollectionModel'
 
-function init(config) {
-  return connection.configure(config)
+const assert = require('assert')
+
+var config
+
+function init(_config) {
+  assert(_config.adapter, 'Arpeggio: .adapter must be set')
+
+  config = _config
+  return adapter.init(_config.adapter)
 }
 
 module.exports = {
   init: init,
-  design: designer.design,
-  getConnection: connection.getConnection,
+  config: config,
   SingleModel: SingleModel,
-  EdgeModel: EdgeModel,
   CollectionModel: CollectionModel
 }

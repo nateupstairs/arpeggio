@@ -4,41 +4,43 @@
 
 var Boom = require('boom')
 
-import * as connection from '../connection'
+import * as adapter from '../adapter'
 
 export class CollectionModel {
 
   constructor(baseModel) {
     this.models = []
     this.baseModel = baseModel
-    this.table = new baseModel().table
-    this.rawQuery = new baseModel().rawQuery
-    this.connection = connection.getConnection()
+    this.type = new baseModel().type
+    this.adapter = adapter.getAdapter()
   }
 
-  async query(aql, params, options = {}) {
-    let localParams = Object.assign({}, params)
-    let localOptions = Object.assign({
-      appendTableParam: true
-    }, options)
-    let result
-    let cursor
+  async query(...args) {
+    try {
+      let result = await this.adapter.query(args)
 
-    if (localOptions.appendTableParam !== false) {
-      localParams['@table'] = this.table
+      if (result) {
+        this.cursor = result.cursor
+        if (result.results.length > 0) {
+          result.results.forEach(modelData => {
+            let model = new this.baseModel()
+
+            model.ingest(modelData.data)
+            model.key = modelData.key
+            this.models.push(model)
+          })
+          return this
+        }
+      }
+      return false
     }
-    cursor = await this.connection.database.query(aql, localParams)
+    catch (err) {
+      throw Boom.wrap(err)
+    }
+  }
 
-    return cursor.all()
-      .then(result => {
-        result.forEach(modelData => {
-          let model = new this.baseModel()
-
-          model.ingest(modelData)
-          this.models.push(model)
-        })
-        return this
-      })
+  async buildQuery() {
+    return this.adapter.buildQuery(this.type)
   }
 
   async save() {

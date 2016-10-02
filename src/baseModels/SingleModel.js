@@ -7,57 +7,31 @@ var Boom = require('boom')
 var base64 = require('urlsafe-base64')
 var _ = require('lodash')
 
-import * as connection from '../connection'
+import * as adapter from '../adapter'
 
 export class SingleModel {
 
-  constructor(table) {
+  constructor(type) {
+    this.adapter = adapter.getAdapter()
+    this.type = type
     this.isNew = true
     this.timestamps = false
+    this.key = false
     this.data = {}
     this.events = {}
     this.prevData = {}
-    this.table = table
     this.children = {}
     this.meta = {}
     this.Joi = Joi
-    this.connection = connection.getConnection()
   }
 
   async fetch(...args) {
-    let key
-    let value
-    let params = {}
-
-    if (args.length == 1) {
-      key = '_key'
-      value = args[0]
-    }
-    else {
-      key = args[0]
-      value = args[1]
-    }
     try {
-      let result
-      let cursor = await this.connection.database.query(
-        `
-          FOR i IN @@table
-            FILTER i.@key == @value
-            RETURN i
-        `,
-        {
-          '@table': this.table,
-          key: key,
-          value: value
-        }
-      )
+      let result = await this.adapter.read(this.type, args)
 
-      if (!cursor._result.length) {
-        throw Boom.notFound()
-      }
-      result = await cursor.next()
+      this.key = result.key
+      this.assignData(result.data)
       this.isNew = false
-      this.assignData(result)
       return this
     }
     catch (err) {
@@ -65,39 +39,9 @@ export class SingleModel {
     }
   }
 
-  async query(aql, params, options = {}) {
-    let localParams = Object.assign({}, params)
-    let localOptions = Object.assign({
-      appendTableParam: true
-    }, options)
-
-    if (localOptions.appendTableParam !== false) {
-      localParams['@table'] = this.table
-    }
+  async query(...args) {
     try {
-      let result
-      let cursor = await this.connection.database.query(aql, localParams)
-
-      if (!cursor._result.length) {
-        throw Boom.notFound()
-      }
-      result = await cursor.next()
-      this.isNew = false
-      this.assignData(result)
-      return this
-    }
-    catch (err) {
-      throw Boom.wrap(err)
-    }
-  }
-
-  async rawQuery(aql, params) {
-    try {
-      let result
-      let cursor = await this.connection.database.query(aql, params)
-
-      result = await cursor.all()
-      return result
+      await this.adapter.query(this.type, args)
     }
     catch (err) {
       throw Boom.wrap(err)
@@ -143,28 +87,15 @@ export class SingleModel {
 
   async destroy() {
     try {
-      await this.triggerEvent('beforeDestroy')
-      let cursor = await this.connection.database.query(
-        `
-          REMOVE @key in @@table
-        `,
-        {
-          '@table': this.table,
-          key: this.data._key
-        }
-      )
-
-      await this.triggerEvent('afterDestroy')
-      return this
+      await this.adapter.destroy(this.type, this.key)
     }
     catch (err) {
-      throw Boom.notFound()
+      throw Boom.wrap(err)
     }
   }
 
-  async save() {
+  async save(...args) {
     let data = this.format()
-    let cursor
 
     try {
       let validated
@@ -174,33 +105,12 @@ export class SingleModel {
       validated = await this.validate()
       this.data = validated
       if (this.isNew) {
-        cursor = await this.connection.database.query(
-          `
-            INSERT @data IN @@table
-              RETURN NEW
-          `,
-          {
-            '@table': this.table,
-            data: data
-          }
-        )
+        this.key = await this.adapter.create(this.type, args, this.data)
       }
       else {
-        cursor = await this.connection.database.query(
-          `
-            UPDATE @key
-              WITH @data IN @@table
-              RETURN NEW
-          `,
-          {
-            '@table': this.table,
-            key: this.data._key,
-            data: data
-          }
-        )
+        await this.adapter.update(this.type, this.key, this.data)
       }
       this.isNew = false
-      this.data = cursor._result[0]
       await this.triggerEvent('afterSave')
       return this
     }
@@ -222,7 +132,7 @@ export class SingleModel {
 
     return new Promise(function(resolve, reject) {
       if (!rules) {
-        return resolve()
+        return resolve(data)
       }
       return Joi.validate(data, rules, options, function(err, value) {
         if (err) {
@@ -250,10 +160,6 @@ export class SingleModel {
     }
   }
 
-  keyToId(key) {
-    return `${this.table}/${key}`
-  }
-
   async triggerEvent(eventName) {
     if (!this.events[eventName]) {
       return false
@@ -262,9 +168,10 @@ export class SingleModel {
   }
 
   toJSON() {
-    let currentData = Object.assign({}, this.data)
+    let currentData = Object.assign({
+      _id: this.adapter.getKey(this.key)
+    }, this.data)
     let localData = {}
-    let hidden = ['_rev', '_key']
 
     if (currentData._key) {
       localData._id = currentData._key
@@ -272,11 +179,10 @@ export class SingleModel {
     }
     localData = Object.assign(localData, currentData)
     if (this.hidden) {
-      hidden = hidden.concat(this.hidden)
+      this.hidden.forEach(h => {
+        delete localData[h]
+      })
     }
-    hidden.forEach(h => {
-      delete localData[h]
-    })
     for (let key in this.children) {
       let modelData = this.children[key]
 
