@@ -16,6 +16,7 @@ export class SingleModel {
     this.type = type
     this.isNew = true
     this.timestamps = false
+    this.subModels = {}
     this.key = false
     this.data = {}
     this.events = {}
@@ -51,15 +52,21 @@ export class SingleModel {
   assignData(inData) {
     let data = Object.assign({}, inData)
 
+    this.parseSubmodels()
+    this.prevData = data
+    Object.assign(this.data, data)
+  }
+
+  parseSubmodels() {
     if (this.submodels) {
-      this.submodels.forEach(s => {
+      Object.keys(this.submodels).forEach(s => {
         let key = s[0]
         let Model = s[1]
 
-        if (data[key]) {
-          let keyData = data[key]
+        if (this.data[key]) {
+          let keyData = this.data[key]
 
-          delete data[key]
+          delete this.data[key]
           if (_.isArray(keyData)) {
             this.children[key] = []
             let collection = new Model()
@@ -81,8 +88,6 @@ export class SingleModel {
         }
       })
     }
-    this.prevData = data
-    Object.assign(this.data, data)
   }
 
   async destroy() {
@@ -147,6 +152,10 @@ export class SingleModel {
     return Object.assign(this.data, obj)
   }
 
+  setMeta(field, value) {
+    this.meta[field] = value
+  }
+
   ingest(d) {
     this.isNew = false
     this.assignData(d)
@@ -154,9 +163,12 @@ export class SingleModel {
   }
 
   updateTimestamps() {
-    this.data.updatedAt = new Date()
+    let timestamp = Date.now()
+
+    timestamp = timestamp / 1000
+    this.data.updatedAt = timestamp
     if (this.isNew) {
-      this.data.createdAt = new Date()
+      this.data.createdAt = timestamp
     }
   }
 
@@ -167,9 +179,38 @@ export class SingleModel {
     return await this[this.events[eventName]]()
   }
 
+  report(field) {
+    return this.data[field]
+  }
+
+  get(field) {
+    return this.report(field)
+  }
+
+  getKey() {
+    return this.adapter.getKey(this.key)
+  }
+
+  addSubmodel(field, model) {
+    if (this.submodels[field]) {
+      this.children[field] = model
+    }
+  }
+
+  async load(field, id) {
+    if (this.submodels[field]) {
+      let model = new this.submodels[field]['model']()
+      let key = id || this.get(this.submodels[field]['key'])
+
+      await model.fetch(key)
+      this.addSubmodel(field, model)
+    }
+  }
+
   toJSON() {
+    let _id = this.getKey()
     let currentData = Object.assign({
-      _id: this.adapter.getKey(this.key)
+      _id: _id
     }, this.data)
     let localData = {}
 
@@ -192,12 +233,16 @@ export class SingleModel {
           localData[key].push(m.toJSON())
         })
       }
-      else {
+      else if (_.isObject(modelData)) {
         localData[key] = modelData.toJSON()
+      }
+      else {
+        localData[key] = null
       }
     }
     for (let key in this.meta) {
-      localData[key] = this.meta[key]
+      localData._meta ={}
+      localData._meta[key] = this.meta[key]
     }
     return localData
   }
