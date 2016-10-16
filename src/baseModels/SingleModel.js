@@ -30,10 +30,15 @@ export class SingleModel {
     try {
       let result = await this.adapter.read(this.type, args)
 
-      this.key = result.key
-      this.assignData(result.data)
-      this.isNew = false
-      return this
+      if (!result) {
+        throw Boom.notFound()
+      }
+      else {
+        this.key = result.key
+        this.assignData(result.data)
+        this.isNew = false
+        return this
+      }
     }
     catch (err) {
       throw Boom.wrap(err)
@@ -241,7 +246,9 @@ export class SingleModel {
       }
     }
     for (let key in this.meta) {
-      localData._meta ={}
+      if (!localData._meta) {
+        localData._meta = {}
+      }
       localData._meta[key] = this.meta[key]
     }
     return localData

@@ -105,6 +105,10 @@ export class CollectionModel {
     return this.adapter.byId(this._idMap, id)
   }
 
+  report(field) {
+    return this.models.map(m => m.field)
+  }
+
   async load(field) {
     if (this.submodels[field]) {
       let subModels = new this.submodels[field]['model']()
