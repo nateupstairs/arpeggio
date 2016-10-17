@@ -105,7 +105,7 @@ export class SingleModel {
   }
 
   async save(...args) {
-    let data = this.format()
+    let data = this.getCurrentData()
 
     try {
       let validated
@@ -129,13 +129,13 @@ export class SingleModel {
     }
   }
 
-  format() {
+  getCurrentData() {
     return this.data
   }
 
   async validate() {
     let rules = this.rules
-    let data = this.format()
+    let data = this.getCurrentData()
     let options = {
       abortEarly: false
     }
@@ -212,7 +212,7 @@ export class SingleModel {
     }
   }
 
-  toJSON() {
+  format() {
     let _id = this.getKey()
     let currentData = Object.assign({
       _id: _id
@@ -252,6 +252,10 @@ export class SingleModel {
       localData._meta[key] = this.meta[key]
     }
     return localData
+  }
+
+  toJSON() {
+    return this.format()
   }
 
 }
