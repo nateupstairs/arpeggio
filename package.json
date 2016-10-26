@@ -1,6 +1,6 @@
 {
   "name": "arpeggio",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "extremely opinionated ORM/ODM",
   "main": "lib/arpeggio.js",
   "repository": {
