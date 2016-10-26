@@ -119,6 +119,7 @@ export class CollectionModel {
         idList.push(m.report(key))
       })
       idList = _.compact(idList)
+      idList = _.uniq(idList)
       if (idList.length) {
         await subModels.fetch(idList)
       }
