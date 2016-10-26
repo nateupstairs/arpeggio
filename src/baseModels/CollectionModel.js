@@ -81,9 +81,8 @@ export class CollectionModel {
     let keysToDelete = []
 
     this.models.forEach(m => {
-      keysToDelete.push(m.getKey())
+      keysToDelete.push(m.key)
     })
-    debugger
     await this.adapter.destroyMany(this.type, keysToDelete)
     return this
   }
