@@ -206,9 +206,14 @@ export class SingleModel {
     if (this.submodels[field]) {
       let model = new this.submodels[field]['model']()
       let key = id || this.get(this.submodels[field]['key'])
-
-      await model.fetch(key)
-      this.addSubmodel(field, model)
+      
+      try {
+        await model.fetch(key)
+        this.addSubmodel(field, model)
+      }
+      catch (err) {
+        //
+      }
     }
   }
 
